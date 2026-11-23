@@ -4,7 +4,7 @@
 
 // Pega aquí tu URL y tu Anon Key (Supabase -> Project Settings -> API)
 const DEFAULT_SUPABASE_URL = "https://fwvgynuanopqczfxvddh.supabase.co";
-const DEFAULT_SUPABASE_ANON_KEY = "PEGA_AQUI_TU_ANON_KEY_COMPLETA";
+const DEFAULT_SUPABASE_ANON_KEY = "sb_publishable_xC80ssiIpXEUQVKesrIBNQ_weSmUGLW";
 
 // Variable global donde guardaremos la instancia de Supabase
 let db = null;
