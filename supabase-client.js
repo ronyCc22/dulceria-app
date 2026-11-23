@@ -13,8 +13,8 @@ const DEFAULT_SUPABASE_ANON_KEY ="";
 
 // Intentamos leer del almacenamiento local del navegador (localStorage)
 // o usamos los valores por defecto escritos arriba.
-const SUPABASE_URL = localStorage.getItem("dulces_supabase_url") || DEFAULT_SUPABASE_URL;
-const SUPABASE_ANON_KEY = localStorage.getItem("dulces_supabase_anon_key") || DEFAULT_SUPABASE_ANON_KEY;
+const DEFAULT_SUPABASE_URL = "https://fwvgynuanopqczfxvddh.supabase.co";
+const DEFAULT_SUPABASE_ANON_KEY = "tu-anon-key-aqui";
 
 // Variable global donde guardaremos la instancia de Supabase
 let db = null;
