@@ -1,0 +1,699 @@
+/* ============================================================================
+   ESTILOS CSS: SISTEMA DE INVENTARIO Y VENTAS - DULCERÍA
+   ============================================================================
+   Diseño moderno, limpio y amigable sin dependencias ni frameworks.
+   ============================================================================ */
+
+:root {
+    --primary: #8b5cf6;       /* Morado dulce / tono Yape */
+    --primary-hover: #7c3aed;
+    --primary-light: #ede9fe;
+    --accent: #ec4899;        /* Rosa dulce */
+    --accent-light: #fce7f3;
+    --success: #10b981;       /* Verde efectivo / pagado */
+    --success-light: #d1fae5;
+    --warning: #f59e0b;       /* Ámbar deudas */
+    --warning-light: #fef3c7;
+    --danger: #ef4444;
+    --danger-light: #fee2e2;
+    --dark: #1e293b;
+    --gray-600: #475569;
+    --gray-400: #94a3b8;
+    --gray-200: #e2e8f0;
+    --gray-100: #f1f5f9;
+    --bg: #f8fafc;
+    --white: #ffffff;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--dark);
+    line-height: 1.5;
+    min-height: 100vh;
+}
+
+/* -------------------------------------------------------------------------
+   ENCABEZADO / HEADER
+   ------------------------------------------------------------------------- */
+.app-header {
+    background: linear-gradient(135deg, var(--primary) 0%, #6d28d9 100%);
+    color: var(--white);
+    padding: 1rem 1.5rem;
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.header-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.logo-icon {
+    font-size: 2rem;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-md);
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-title h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.logo-title p {
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+.user-badge-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.user-badge {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 0.4rem 0.8rem;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.user-badge strong {
+    color: #fef08a; /* amarillo suave */
+}
+
+/* -------------------------------------------------------------------------
+   BARRA DE NAVEGACIÓN (PESTAÑAS)
+   ------------------------------------------------------------------------- */
+.nav-tabs {
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-200);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.tabs-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    overflow-x: auto;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+}
+
+.tab-btn {
+    border: none;
+    background: transparent;
+    padding: 0.7rem 1.1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--gray-600);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.tab-btn:hover {
+    background-color: var(--gray-100);
+    color: var(--primary);
+}
+
+.tab-btn.active {
+    background-color: var(--primary-light);
+    color: var(--primary);
+}
+
+/* -------------------------------------------------------------------------
+   CONTENIDO PRINCIPAL
+   ------------------------------------------------------------------------- */
+.main-container {
+    max-width: 1200px;
+    margin: 1.5rem auto;
+    padding: 0 1rem;
+}
+
+/* Vistas / Pantallas */
+.view-section {
+    display: none; /* Se activan con JS añadiendo la clase .active */
+    animation: fadeIn 0.25s ease-in-out;
+}
+
+.view-section.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* -------------------------------------------------------------------------
+   TARJETAS Y LAYOUT
+   ------------------------------------------------------------------------- */
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .grid-2 {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+}
+
+.card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-200);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--dark);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* -------------------------------------------------------------------------
+   FORMULARIOS Y CAMPOS
+   ------------------------------------------------------------------------- */
+.form-group {
+    margin-bottom: 1.2rem;
+}
+
+label {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--gray-600);
+    margin-bottom: 0.4rem;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.95rem;
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    background-color: var(--white);
+    color: var(--dark);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+}
+
+.form-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.form-row .form-group {
+    flex: 1;
+    min-width: 140px;
+}
+
+.radio-group {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.radio-card {
+    flex: 1;
+    min-width: 120px;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    padding: 0.6rem 0.8rem;
+    cursor: pointer;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.radio-card input[type="radio"] {
+    display: none;
+}
+
+.radio-card.selected-efectivo {
+    border-color: var(--success);
+    background-color: var(--success-light);
+    color: #065f46;
+}
+
+.radio-card.selected-yape {
+    border-color: var(--primary);
+    background-color: var(--primary-light);
+    color: #5b21b6;
+}
+
+.radio-card.selected-pagado {
+    border-color: var(--success);
+    background-color: var(--success-light);
+    color: #065f46;
+}
+
+.radio-card.selected-debe {
+    border-color: var(--warning);
+    background-color: var(--warning-light);
+    color: #92400e;
+}
+
+/* -------------------------------------------------------------------------
+   BOTONES
+   ------------------------------------------------------------------------- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.25rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    color: var(--white);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+}
+
+.btn-accent {
+    background-color: var(--accent);
+    color: var(--white);
+}
+
+.btn-accent:hover {
+    background-color: #db2777;
+}
+
+.btn-success {
+    background-color: var(--success);
+    color: var(--white);
+}
+
+.btn-success:hover {
+    background-color: #059669;
+}
+
+.btn-secondary {
+    background-color: var(--gray-100);
+    color: var(--gray-600);
+    border: 1px solid var(--gray-200);
+}
+
+.btn-secondary:hover {
+    background-color: var(--gray-200);
+    color: var(--dark);
+}
+
+.btn-sm {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.82rem;
+}
+
+.btn-block {
+    width: 100%;
+}
+
+/* -------------------------------------------------------------------------
+   TABLAS
+   ------------------------------------------------------------------------- */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    text-align: left;
+}
+
+thead th {
+    background-color: var(--gray-100);
+    color: var(--gray-600);
+    font-weight: 700;
+    padding: 0.75rem 0.85rem;
+    border-bottom: 2px solid var(--gray-200);
+    white-space: nowrap;
+}
+
+tbody td {
+    padding: 0.75rem 0.85rem;
+    border-bottom: 1px solid var(--gray-200);
+    color: var(--dark);
+}
+
+tbody tr:hover {
+    background-color: #fbfcfe;
+}
+
+/* -------------------------------------------------------------------------
+   INSIGNIAS / BADGES
+   ------------------------------------------------------------------------- */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.badge-yape {
+    background-color: #ede9fe;
+    color: #6d28d9;
+}
+
+.badge-efectivo {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.badge-pagado {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.badge-debe {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.badge-stock {
+    background-color: #e0f2fe;
+    color: #0369a1;
+}
+
+.badge-stock-zero {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+/* -------------------------------------------------------------------------
+   TARJETAS DE CUADRE DEL DÍA (METRIC CARDS)
+   ------------------------------------------------------------------------- */
+.metric-card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    border: 1px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: var(--shadow);
+}
+
+.metric-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.7rem;
+}
+
+.metric-efectivo .metric-icon {
+    background-color: var(--success-light);
+    color: var(--success);
+}
+
+.metric-yape .metric-icon {
+    background-color: var(--primary-light);
+    color: var(--primary);
+}
+
+.metric-debe .metric-icon {
+    background-color: var(--warning-light);
+    color: var(--warning);
+}
+
+.metric-total .metric-icon {
+    background-color: var(--accent-light);
+    color: var(--accent);
+}
+
+.metric-info h3 {
+    font-size: 0.8rem;
+    color: var(--gray-600);
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.metric-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--dark);
+    margin-top: 0.1rem;
+}
+
+/* -------------------------------------------------------------------------
+   CARRITO DE VENTA
+   ------------------------------------------------------------------------- */
+.cart-list {
+    background: var(--gray-100);
+    border-radius: var(--radius-md);
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.cart-item {
+    background: var(--white);
+    border-radius: var(--radius-sm);
+    padding: 0.6rem 0.8rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.cart-item-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.cart-item-sub {
+    font-size: 0.8rem;
+    color: var(--gray-600);
+}
+
+.cart-total-banner {
+    background: var(--primary-light);
+    border: 1px solid #ddd6fe;
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.2rem;
+}
+
+.cart-total-banner span {
+    font-weight: 700;
+    color: var(--primary-hover);
+    font-size: 1.1rem;
+}
+
+.cart-total-banner strong {
+    font-size: 1.8rem;
+    color: var(--primary-hover);
+}
+
+/* -------------------------------------------------------------------------
+   MODALES Y ALERTAS TOAST
+   ------------------------------------------------------------------------- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 100;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    max-width: 500px;
+    width: 100%;
+    padding: 1.75rem;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalIn 0.2s ease-out;
+}
+
+@keyframes modalIn {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid var(--gray-200);
+    padding-bottom: 0.75rem;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--gray-400);
+    cursor: pointer;
+}
+
+.modal-close:hover {
+    color: var(--dark);
+}
+
+/* Toast flotante de notificación */
+.toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: var(--dark);
+    color: var(--white);
+    padding: 0.85rem 1.4rem;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 600;
+    font-size: 0.92rem;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.toast.toast-success {
+    background-color: #065f46;
+    border-left: 5px solid var(--success);
+}
+
+.toast.toast-error {
+    background-color: #7f1d1d;
+    border-left: 5px solid var(--danger);
+}
+
+/* -------------------------------------------------------------------------
+   AVISO DE CONFIGURACIÓN SUPABASE
+   ------------------------------------------------------------------------- */
+.config-alert {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.config-alert p {
+    font-size: 0.9rem;
+    color: #92400e;
+}

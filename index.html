@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Inventario y Ventas - Dulcería</title>
+    <!-- Hoja de estilos externa -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Librería oficial de Supabase desde CDN (no requiere npm ni Node.js) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <!-- =====================================================================
+         ENCABEZADO PRINCIPAL DE LA APLICACIÓN
+         ===================================================================== -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="logo-section">
+                <div class="logo-icon">🍬</div>
+                <div class="logo-title">
+                    <h1>Dulcería & Golosinas</h1>
+                    <p>Control de Inventario, Ventas y Cuadre Diario</p>
+                </div>
+            </div>
+
+            <div class="user-badge-container">
+                <!-- Información del vendedor conectado -->
+                <div id="userInfoBadge" class="user-badge">
+                    <span>👤 Vendedor:</span>
+                    <strong id="currentUserName">Sin sesión</strong>
+                </div>
+                <!-- Botón para iniciar o cerrar sesión -->
+                <button id="authBtn" class="btn btn-secondary btn-sm" onclick="abrirModalAuth()">
+                    Iniciar Sesión
+                </button>
+                <!-- Botón para configurar credenciales de Supabase -->
+                <button class="btn btn-secondary btn-sm" onclick="abrirModalConfig()" title="Configurar conexión Supabase">
+                    ⚙️ Conexión
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- =====================================================================
+         PESTAÑAS DE NAVEGACIÓN
+         ===================================================================== -->
+    <nav class="nav-tabs">
+        <div class="tabs-container">
+            <button class="tab-btn active" onclick="cambiarPestana('ventasTab', this)">
+                🛒 Registrar Venta
+            </button>
+            <button class="tab-btn" onclick="cambiarPestana('cuadreTab', this)">
+                📊 Stock y Cuadre del Día
+            </button>
+            <button class="tab-btn" onclick="cambiarPestana('entregasTab', this)">
+                🚚 Entregar Mercadería
+            </button>
+            <button class="tab-btn" onclick="cambiarPestana('comprasTab', this)">
+                📥 Registrar Compra
+            </button>
+            <button class="tab-btn" onclick="cambiarPestana('productosTab', this)">
+                🏷️ Productos
+            </button>
+        </div>
+    </nav>
+
+    <!-- =====================================================================
+         CONTENIDO PRINCIPAL: VISTAS Y PANTALLAS
+         ===================================================================== -->
+    <main class="main-container">
+
+        <!-- Alerta en caso de que falte configurar Supabase -->
+        <div id="configAlert" class="config-alert" style="display: none;">
+            <div>
+                <strong>⚠️ Conexión de Supabase no configurada</strong>
+                <p>Para guardar los datos en la nube, ingresa la URL y la Anon Key de tu proyecto de Supabase.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="abrirModalConfig()">Configurar ahora</button>
+        </div>
+
+        <!-- -----------------------------------------------------------------
+             PANTALLA 1: REGISTRAR VENTA
+             ----------------------------------------------------------------- -->
+        <section id="ventasTab" class="view-section active">
+            <div class="grid-2">
+                
+                <!-- Columna Izquierda: Formulario de la venta -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">🛍️ Nueva Venta</h2>
+                        <span class="badge badge-stock" id="badgeVendedorActivo">Vendedor Activo</span>
+                    </div>
+
+                    <!-- Selección de producto y cantidad para el carrito -->
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 2;">
+                            <label for="ventaProductoSelect">Selecciona Dulce o Golosina:</label>
+                            <select id="ventaProductoSelect" class="form-control" onchange="actualizarPrecioProductoVenta()">
+                                <option value="">-- Elige un producto --</option>
+                            </select>
+                            <small id="stockDisponibleMsg" style="color: var(--gray-600); font-size: 0.8rem; display: block; margin-top: 4px;">
+                                Stock disponible: -
+                            </small>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="ventaCantidadInput">Cantidad:</label>
+                            <input type="number" id="ventaCantidadInput" class="form-control" min="1" value="1">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
+                        <button type="button" class="btn btn-secondary btn-block" onclick="agregarAlCarrito()">
+                            ➕ Agregar a la Venta
+                        </button>
+                    </div>
+
+                    <!-- Lista de productos agregados (Carrito) -->
+                    <label>Productos en esta venta:</label>
+                    <div id="carritoContainer" class="cart-list">
+                        <p style="text-align: center; color: var(--gray-400); padding: 1rem; font-size: 0.85rem;">
+                            No has agregado ningún dulce a la venta todavía.
+                        </p>
+                    </div>
+
+                    <!-- Total de la venta -->
+                    <div class="cart-total-banner">
+                        <span>TOTAL A COBRAR:</span>
+                        <strong id="cartTotalText">S/ 0.00</strong>
+                    </div>
+
+                    <!-- Método de pago: Efectivo o Yape -->
+                    <div class="form-group">
+                        <label>Método de Pago:</label>
+                        <div class="radio-group">
+                            <label class="radio-card selected-efectivo" id="labelEfectivo" onclick="seleccionarMetodoPago('efectivo')">
+                                <input type="radio" name="metodoPago" value="efectivo" checked>
+                                💵 Efectivo
+                            </label>
+                            <label class="radio-card" id="labelYape" onclick="seleccionarMetodoPago('yape')">
+                                <input type="radio" name="metodoPago" value="yape">
+                                📱 Yape
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Estado del pago: Pagado o Debe -->
+                    <div class="form-group">
+                        <label>Estado del Pago:</label>
+                        <div class="radio-group">
+                            <label class="radio-card selected-pagado" id="labelPagado" onclick="seleccionarEstadoPago('pagado')">
+                                <input type="radio" name="estadoPago" value="pagado" checked>
+                                ✅ Pagado
+                            </label>
+                            <label class="radio-card" id="labelDebe" onclick="seleccionarEstadoPago('debe')">
+                                <input type="radio" name="estadoPago" value="debe">
+                                ⏳ Debe (Fiado)
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Campo condicional: Nombre de quien debe -->
+                    <div class="form-group" id="deudorFieldGroup" style="display: none;">
+                        <label for="nombreDeudorInput" style="color: #b45309;">⚠️ Nombre del cliente que queda debiendo:</label>
+                        <input type="text" id="nombreDeudorInput" class="form-control" placeholder="Ej. Juan vecino piso 2, Doña María">
+                    </div>
+
+                    <!-- Botón para procesar la venta -->
+                    <button type="button" class="btn btn-primary btn-block" style="padding: 0.9rem;" onclick="procesarVenta()">
+                        ✨ Registrar Venta
+                    </button>
+                </div>
+
+                <!-- Columna Derecha: Ventas recientes del vendedor -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">🕒 Últimas Ventas de Hoy</h2>
+                        <button class="btn btn-secondary btn-sm" onclick="cargarUltimasVentasVendedor()">🔄 Refrescar</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Hora</th>
+                                    <th>Total</th>
+                                    <th>Método</th>
+                                    <th>Estado</th>
+                                    <th>Detalles</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaUltimasVentasBody">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; color: var(--gray-400);">Cargando ventas...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- -----------------------------------------------------------------
+             PANTALLA 2: STOCK Y CUADRE DEL DÍA
+             ----------------------------------------------------------------- -->
+        <section id="cuadreTab" class="view-section">
+            
+            <!-- Barra de filtro de fecha y vendedor -->
+            <div class="card" style="padding: 1rem 1.5rem; margin-bottom: 1.25rem;">
+                <div class="form-row" style="align-items: flex-end; margin-bottom: 0;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="cuadreFechaInput">Fecha del Cuadre:</label>
+                        <input type="date" id="cuadreFechaInput" class="form-control" onchange="cargarCuadreYStock()">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="cuadreVendedorSelect">Filtrar por Vendedor:</label>
+                        <select id="cuadreVendedorSelect" class="form-control" onchange="cargarCuadreYStock()">
+                            <option value="todos">-- Todos los Vendedores --</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <button class="btn btn-secondary" onclick="cargarCuadreYStock()">
+                            🔍 Consultar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tarjetas de métricas del cuadre -->
+            <div class="grid-3" style="margin-bottom: 1.5rem;">
+                <div class="metric-card metric-efectivo">
+                    <div class="metric-icon">💵</div>
+                    <div class="metric-info">
+                        <h3>Efectivo del Día</h3>
+                        <div class="metric-value" id="cuadreEfectivoText">S/ 0.00</div>
+                    </div>
+                </div>
+
+                <div class="metric-card metric-yape">
+                    <div class="metric-icon">📱</div>
+                    <div class="metric-info">
+                        <h3>Yape del Día</h3>
+                        <div class="metric-value" id="cuadreYapeText">S/ 0.00</div>
+                    </div>
+                </div>
+
+                <div class="metric-card metric-debe">
+                    <div class="metric-icon">⏳</div>
+                    <div class="metric-info">
+                        <h3>Deudas / Por Cobrar</h3>
+                        <div class="metric-value" id="cuadreDeudaText">S/ 0.00</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <!-- Tabla: Stock de cada vendedor -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">📦 Stock Actual por Vendedor</h2>
+                        <small style="color: var(--gray-600);">Entregado - Vendido</small>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Vendedor</th>
+                                    <th>Dulce</th>
+                                    <th>Entregado</th>
+                                    <th>Vendido</th>
+                                    <th>Stock Actual</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaStockVendedoresBody">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; color: var(--gray-400);">Cargando inventario...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tabla: Cuentas por cobrar / Deudas pendientes -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">📝 Cuentas por Cobrar (Deudas)</h2>
+                        <span class="badge badge-debe">Pendientes</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Vendedor</th>
+                                    <th>Cliente que debe</th>
+                                    <th>Monto</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaDeudoresBody">
+                                <tr>
+                                    <td colspan="4" style="text-align: center; color: var(--gray-400);">No hay deudas pendientes registradas.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla completa de ventas del día -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">📑 Detalle de Todas las Ventas del Día</h2>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Hora</th>
+                                <th>Vendedor</th>
+                                <th>Productos</th>
+                                <th>Método</th>
+                                <th>Estado</th>
+                                <th>Cliente Deudor</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaVentasDetalladasBody">
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: var(--gray-400);">Selecciona una fecha para ver el detalle.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- -----------------------------------------------------------------
+             PANTALLA 3: ENTREGAR MERCADERÍA A UN VENDEDOR
+             ----------------------------------------------------------------- -->
+        <section id="entregasTab" class="view-section">
+            <div class="grid-2">
+                <!-- Formulario para entregar mercadería -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">🚚 Entregar Mercadería a Vendedor</h2>
+                    </div>
+
+                    <form id="formEntrega" onsubmit="registrarEntrega(event)">
+                        <div class="form-group">
+                            <label for="entregaVendedorSelect">Vendedor que recibe:</label>
+                            <select id="entregaVendedorSelect" class="form-control" required>
+                                <option value="">-- Selecciona al vendedor --</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="entregaProductoSelect">Producto a entregar:</label>
+                            <select id="entregaProductoSelect" class="form-control" required onchange="actualizarInfoAlmacenEntrega()">
+                                <option value="">-- Selecciona el dulce --</option>
+                            </select>
+                            <small id="entregaAlmacenStockInfo" style="color: var(--gray-600); font-size: 0.8rem; margin-top: 4px; display: block;">
+                                Stock en almacén: -
+                            </small>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="entregaCantidadInput">Cantidad de unidades:</label>
+                                <input type="number" id="entregaCantidadInput" class="form-control" min="1" placeholder="Ej. 20" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="entregaFechaInput">Fecha y hora:</label>
+                                <input type="datetime-local" id="entregaFechaInput" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block" style="padding: 0.8rem;">
+                            📦 Confirmar Entrega
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Historial de entregas realizadas -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">📋 Últimas Entregas Realizadas</h2>
+                        <button class="btn btn-secondary btn-sm" onclick="cargarHistorialEntregas()">🔄 Refrescar</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Vendedor</th>
+                                    <th>Producto</th>
+                                    <th>Cantidad</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaHistorialEntregasBody">
+                                <tr>
+                                    <td colspan="4" style="text-align: center; color: var(--gray-400);">Cargando entregas...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- -----------------------------------------------------------------
+             PANTALLA 4: REGISTRAR COMPRA (ABASTECIMIENTO GENERAL)
+             ----------------------------------------------------------------- -->
+        <section id="comprasTab" class="view-section">
+            <div class="grid-2">
+                <!-- Formulario de compra mayorista -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">📥 Registrar Compra a Proveedor</h2>
+                    </div>
+
+                    <form id="formCompra" onsubmit="registrarCompra(event)">
+                        <div class="form-group">
+                            <label for="compraProductoSelect">Producto o Dulce Comprado:</label>
+                            <select id="compraProductoSelect" class="form-control" required>
+                                <option value="">-- Selecciona el producto --</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="compraCantidadInput">Cantidad comprada (unids):</label>
+                                <input type="number" id="compraCantidadInput" class="form-control" min="1" placeholder="Ej. 100" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="compraCostoInput">Costo total pagado (S/.):</label>
+                                <input type="number" id="compraCostoInput" class="form-control" step="0.01" min="0" placeholder="Ej. 80.00" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="compraFechaInput">Fecha y hora de compra:</label>
+                            <input type="datetime-local" id="compraFechaInput" class="form-control" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-accent btn-block" style="padding: 0.8rem;">
+                            💰 Guardar Compra
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Historial de compras registradas -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">📦 Historial de Compras Recientes</h2>
+                        <button class="btn btn-secondary btn-sm" onclick="cargarHistorialCompras()">🔄 Refrescar</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Producto</th>
+                                    <th>Cantidad</th>
+                                    <th>Costo Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaHistorialComprasBody">
+                                <tr>
+                                    <td colspan="4" style="text-align: center; color: var(--gray-400);">Cargando compras...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- -----------------------------------------------------------------
+             PANTALLA 5: CATÁLOGO DE PRODUCTOS (DULCES)
+             ----------------------------------------------------------------- -->
+        <section id="productosTab" class="view-section">
+            <div class="grid-2">
+                <!-- Formulario de nuevo producto -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">✨ Agregar Nuevo Dulce al Catálogo</h2>
+                    </div>
+
+                    <form id="formNuevoProducto" onsubmit="guardarNuevoProducto(event)">
+                        <div class="form-group">
+                            <label for="productoNombreInput">Nombre del Dulce / Golosina:</label>
+                            <input type="text" id="productoNombreInput" class="form-control" placeholder="Ej. Chocolates Sublime 30g" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="productoPrecioInput">Precio de Venta al Público (S/.):</label>
+                            <input type="number" id="productoPrecioInput" class="form-control" step="0.10" min="0" placeholder="Ej. 2.50" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block">
+                            ➕ Registrar Producto
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Catálogo actual -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">🏷️ Catálogo de Dulces</h2>
+                        <button class="btn btn-secondary btn-sm" onclick="cargarProductos()">🔄 Refrescar</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Precio de Venta</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaProductosCatalogoBody">
+                                <tr>
+                                    <td colspan="3" style="text-align: center; color: var(--gray-400);">Cargando productos...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- =====================================================================
+         MODAL: AUTENTICACIÓN / LOGIN DE VENDEDORES
+         ===================================================================== -->
+    <div id="modalAuth" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔐 Iniciar Sesión de Vendedor</h3>
+                <button class="modal-close" onclick="cerrarModalAuth()">&times;</button>
+            </div>
+            
+            <p style="font-size: 0.88rem; color: var(--gray-600); margin-bottom: 1.25rem;">
+                Selecciona tu perfil de vendedor o ingresa con tu correo y contraseña de Supabase Auth:
+            </p>
+
+            <!-- Acceso Rápido para los dos vendedores -->
+            <div style="background: var(--gray-100); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem;">
+                <label style="margin-bottom: 0.5rem; display: block;">⚡ Acceso directo:</label>
+                <div style="display: flex; gap: 0.5rem; flex-direction: column;" id="botonesAccesoRapidoVendedores">
+                    <!-- Los botones de Carlos y Andrea se generan dinámicamente con JS -->
+                </div>
+            </div>
+
+            <!-- Login con contraseña (Supabase Auth) -->
+            <form id="formLogin" onsubmit="iniciarSesionConAuth(event)">
+                <div class="form-group">
+                    <label for="authEmailInput">Correo electrónico:</label>
+                    <input type="email" id="authEmailInput" class="form-control" placeholder="vendedor@dulces.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="authPasswordInput">Contraseña:</label>
+                    <input type="password" id="authPasswordInput" class="form-control" placeholder="••••••••" required>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                    <button type="submit" class="btn btn-primary btn-block">
+                        Entrar con Correo
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="registrarUsuarioEnAuth()">
+                        Registrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         MODAL: CONFIGURACIÓN DE CREDENCIALES DE SUPABASE
+         ===================================================================== -->
+    <div id="modalConfig" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚙️ Conexión con Supabase</h3>
+                <button class="modal-close" onclick="cerrarModalConfig()">&times;</button>
+            </div>
+            
+            <p style="font-size: 0.88rem; color: var(--gray-600); margin-bottom: 1rem;">
+                Copia estos datos desde tu proyecto de Supabase en 
+                <strong>Project Settings &rarr; API</strong>:
+            </p>
+
+            <form onsubmit="guardarConfiguracionSupabaseForm(event)">
+                <div class="form-group">
+                    <label for="configUrlInput">Project URL:</label>
+                    <input type="url" id="configUrlInput" class="form-control" placeholder="https://xyzcompany.supabase.co" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="configKeyInput">Anon Public Key:</label>
+                    <input type="text" id="configKeyInput" class="form-control" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem; margin-top: 1.25rem;">
+                    <button type="submit" class="btn btn-primary btn-block">
+                        💾 Guardar Conexión
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="reiniciarCredencialesSupabase()">
+                        Limpiar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         MODAL: REGISTRAR COBRO DE DEUDA
+         ===================================================================== -->
+    <div id="modalCobrarDeuda" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>💵 Cobrar Deuda Pendiente</h3>
+                <button class="modal-close" onclick="cerrarModalCobrarDeuda()">&times;</button>
+            </div>
+            <p id="cobrarDeudaInfo" style="margin-bottom: 1rem; font-size: 0.95rem;"></p>
+            
+            <div class="form-group">
+                <label>¿Cómo canceló el cliente?:</label>
+                <div class="radio-group">
+                    <label class="radio-card selected-efectivo" id="cobrarLabelEfectivo" onclick="seleccionarMetodoCobro('efectivo')">
+                        <input type="radio" name="metodoCobro" value="efectivo" checked>
+                        💵 Efectivo
+                    </label>
+                    <label class="radio-card" id="cobrarLabelYape" onclick="seleccionarMetodoCobro('yape')">
+                        <input type="radio" name="metodoCobro" value="yape">
+                        📱 Yape
+                    </label>
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-success btn-block" style="margin-top: 1rem;" onclick="confirmarCobroDeuda()">
+                ✅ Marcar como Pagado
+            </button>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         NOTIFICACIÓN TOAST FLOTANTE
+         ===================================================================== -->
+    <div id="toastNotification" class="toast">
+        <span id="toastIcon">✅</span>
+        <span id="toastMessage">Operación realizada con éxito</span>
+    </div>
+
+    <!-- Scripts de la aplicación -->
+    <script src="supabase-client.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
