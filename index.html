@@ -3,39 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control de Inventario y Ventas - Dulcería</title>
-    <!-- Hoja de estilos externa -->
+    <title>Sistema de Inventario, Ventas y Cuadre - Dulcería</title>
+    <!-- Estilos CSS profesionales y modernos -->
     <link rel="stylesheet" href="style.css">
-    <!-- Librería oficial de Supabase desde CDN (no requiere npm ni Node.js) -->
+    <!-- Cliente oficial de Supabase desde CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Librería Chart.js para gráficos estadísticos y tendencias -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
     <!-- =====================================================================
-         ENCABEZADO PRINCIPAL DE LA APLICACIÓN
+         1. BARRA SUPERIOR (HEADER) CON CAMBIO RÁPIDO DE VENDEDOR
          ===================================================================== -->
-    <header class="app-header">
-        <div class="header-container">
-            <div class="logo-section">
-                <div class="logo-icon">🍬</div>
-                <div class="logo-title">
+    <header class="top-header">
+        <div class="header-inner">
+            <div class="brand-section">
+                <div class="brand-icon">🍬</div>
+                <div class="brand-info">
                     <h1>Dulcería & Golosinas</h1>
-                    <p>Control de Inventario, Ventas y Cuadre Diario</p>
+                    <p>Punto de Venta &bull; Inventario &bull; Cuadre de Caja &bull; Estadísticas</p>
                 </div>
             </div>
 
-            <div class="user-badge-container">
-                <!-- Información del vendedor conectado -->
-                <div id="userInfoBadge" class="user-badge">
-                    <span>👤 Vendedor:</span>
-                    <strong id="currentUserName">Sin sesión</strong>
-                </div>
-                <!-- Botón para iniciar o cerrar sesión -->
-                <button id="authBtn" class="btn btn-secondary btn-sm" onclick="abrirModalAuth()">
-                    Iniciar Sesión
+            <!-- Selector Rápido de Vendedor: Permite cambiar de vendedor en 1 clic -->
+            <div class="seller-switcher" id="sellerSwitcherContainer" title="Cambiar vendedor activo">
+                <button class="seller-switch-btn active" id="btnSellerAinhoa" onclick="seleccionarVendedorPorNombre('Ainhoa')">
+                    <span class="active-dot"></span> 👩‍💼 Ainhoa
                 </button>
-                <!-- Botón para configurar credenciales de Supabase -->
-                <button class="btn btn-secondary btn-sm" onclick="abrirModalConfig()" title="Configurar conexión Supabase">
+                <button class="seller-switch-btn" id="btnSellerRony" onclick="seleccionarVendedorPorNombre('Rony')">
+                    👨‍💼 Rony
+                </button>
+            </div>
+
+            <div class="header-actions">
+                <button class="btn-action btn-action-secondary" onclick="abrirModalConfig()" title="Configuración de base de datos Supabase">
                     ⚙️ Conexión
                 </button>
             </div>
@@ -43,276 +45,301 @@
     </header>
 
     <!-- =====================================================================
-         PESTAÑAS DE NAVEGACIÓN
+         2. NAVEGACIÓN PRINCIPAL ENTRE MÓDULOS
          ===================================================================== -->
-    <nav class="nav-tabs">
-        <div class="tabs-container">
-            <button class="tab-btn active" onclick="cambiarPestana('ventasTab', this)">
-                🛒 Registrar Venta
+    <nav class="main-nav">
+        <div class="nav-container">
+            <button class="nav-tab-btn active" onclick="navegarAModulo('posView', this)">
+                ⚡ Punto de Venta
             </button>
-            <button class="tab-btn" onclick="cambiarPestana('cuadreTab', this)">
-                📊 Stock y Cuadre del Día
+            <button class="nav-tab-btn" onclick="navegarAModulo('cuadreView', this)">
+                📊 Resumen & Cuadre Diario
             </button>
-            <button class="tab-btn" onclick="cambiarPestana('entregasTab', this)">
+            <button class="nav-tab-btn" onclick="navegarAModulo('estadisticasView', this)">
+                📈 Estadísticas & Proyecciones
+            </button>
+            <button class="nav-tab-btn" onclick="navegarAModulo('stockView', this)">
+                📦 Control de Stock
+            </button>
+            <button class="nav-tab-btn" onclick="navegarAModulo('entregasView', this)">
                 🚚 Entregar Mercadería
             </button>
-            <button class="tab-btn" onclick="cambiarPestana('comprasTab', this)">
-                📥 Registrar Compra
+            <button class="nav-tab-btn" onclick="navegarAModulo('comprasView', this)">
+                📥 Compras & Gastos
             </button>
-            <button class="tab-btn" onclick="cambiarPestana('productosTab', this)">
-                🏷️ Productos
+            <button class="nav-tab-btn" onclick="navegarAModulo('productosView', this)">
+                🏷️ Catálogo de Dulces
             </button>
         </div>
     </nav>
 
     <!-- =====================================================================
-         CONTENIDO PRINCIPAL: VISTAS Y PANTALLAS
+         3. CONTENIDO PRINCIPAL
          ===================================================================== -->
-    <main class="main-container">
+    <main class="app-container">
 
-        <!-- Alerta en caso de que falte configurar Supabase -->
-        <div id="configAlert" class="config-alert" style="display: none;">
-            <div>
-                <strong>⚠️ Conexión de Supabase no configurada</strong>
-                <p>Para guardar los datos en la nube, ingresa la URL y la Anon Key de tu proyecto de Supabase.</p>
+        <!-- Banner discreto si aún no se conecta a Supabase -->
+        <div id="bannerAlertaConfig" style="display: none; background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-md); padding: 0.85rem 1.25rem; margin-bottom: 1.25rem; justify-content: space-between; align-items: center;">
+            <div style="font-size: 0.9rem; color: #92400e;">
+                <strong>⚡ Modo Demostración Local:</strong> Los datos se guardan en tu navegador. Para conectar tu nube de Supabase, pega tu URL y Anon Key.
             </div>
-            <button class="btn btn-primary btn-sm" onclick="abrirModalConfig()">Configurar ahora</button>
+            <button class="btn-action btn-action-primary" onclick="abrirModalConfig()">Conectar Supabase</button>
         </div>
 
         <!-- -----------------------------------------------------------------
-             PANTALLA 1: REGISTRAR VENTA
+             VISTA 1: PUNTO DE VENTA (VENTAS RÁPIDAS AL CLIENTE)
              ----------------------------------------------------------------- -->
-        <section id="ventasTab" class="view-section active">
-            <div class="grid-2">
+        <section id="posView" class="view-panel active">
+            <div class="pos-layout">
                 
-                <!-- Columna Izquierda: Formulario de la venta -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">🛍️ Nueva Venta</h2>
-                        <span class="badge badge-stock" id="badgeVendedorActivo">Vendedor Activo</span>
-                    </div>
-
-                    <!-- Selección de producto y cantidad para el carrito -->
-                    <div class="form-row">
-                        <div class="form-group" style="flex: 2;">
-                            <label for="ventaProductoSelect">Selecciona Dulce o Golosina:</label>
-                            <select id="ventaProductoSelect" class="form-control" onchange="actualizarPrecioProductoVenta()">
-                                <option value="">-- Elige un producto --</option>
-                            </select>
-                            <small id="stockDisponibleMsg" style="color: var(--gray-600); font-size: 0.8rem; display: block; margin-top: 4px;">
-                                Stock disponible: -
-                            </small>
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label for="ventaCantidadInput">Cantidad:</label>
-                            <input type="number" id="ventaCantidadInput" class="form-control" min="1" value="1">
+                <!-- Columna Izquierda: Catálogo Visual de Dulces -->
+                <div class="pos-products-wrapper">
+                    <!-- Barra de búsqueda rápida -->
+                    <div class="pos-search-bar">
+                        <div class="search-input-group">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="posBuscadorInput" placeholder="Buscar dulce (ej. Trululu, Chomp, Chocman...)" oninput="filtrarProductosPOS()">
                         </div>
                     </div>
 
-                    <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
-                        <button type="button" class="btn btn-secondary btn-block" onclick="agregarAlCarrito()">
-                            ➕ Agregar a la Venta
+                    <!-- Filtros rápidos por categoría -->
+                    <div class="category-chips">
+                        <button class="chip-btn active" onclick="filtrarCategoriaPOS('todos', this)">Todos</button>
+                        <button class="chip-btn" onclick="filtrarCategoriaPOS('golosinas', this)">🍬 Golosinas & Chicles</button>
+                        <button class="chip-btn" onclick="filtrarCategoriaPOS('galletas', this)">🍪 Galletas & Wafers</button>
+                        <button class="chip-btn" onclick="filtrarCategoriaPOS('chocolates', this)">🍫 Chocolates & Paletas</button>
+                        <button class="chip-btn" onclick="filtrarCategoriaPOS('frutos', this)">🥜 Frutos Secos</button>
+                        <button class="chip-btn" onclick="filtrarCategoriaPOS('bebidas', this)">🧃 Bebidas & Agua</button>
+                    </div>
+
+                    <!-- Grilla interactiva de dulces (se llena automáticamente con JS) -->
+                    <div class="products-grid" id="posGridContainer">
+                        <!-- Las tarjetas se generan dinámicamente con JS -->
+                    </div>
+                </div>
+
+                <!-- Columna Derecha: Ticket de Venta / Carrito -->
+                <div class="pos-ticket-wrapper">
+                    <div class="ticket-header">
+                        <div class="ticket-title">
+                            <span>🧾 Ticket Actual</span>
+                            <span class="badge-pill badge-cash" id="posVendedorBadge">Ainhoa</span>
+                        </div>
+                        <button class="ticket-clear-btn" onclick="vaciarTicketVenta()">Limpiar</button>
+                    </div>
+
+                    <!-- Lista de ítems en el ticket -->
+                    <div class="ticket-items-list" id="posTicketList">
+                        <div class="ticket-empty-state">
+                            <div class="ticket-empty-icon">🛒</div>
+                            <p style="font-size: 0.9rem; font-weight: 600;">El ticket está vacío</p>
+                            <small style="color: var(--text-dim);">Toca cualquier dulce a la izquierda para agregarlo a la venta.</small>
+                        </div>
+                    </div>
+
+                    <!-- Totales y Métodos de Cobro -->
+                    <div class="ticket-footer">
+                        <div class="ticket-total-row">
+                            <span class="ticket-total-label">Total a Cobrar:</span>
+                            <span class="ticket-total-amount" id="posTicketTotalAmount">S/ 0.00</span>
+                        </div>
+
+                        <!-- Selector Táctil de Método de Pago -->
+                        <div class="payment-selector-title">Método de Pago:</div>
+                        <div class="payment-toggle-grid">
+                            <button type="button" class="pay-btn pay-btn-cash active" id="btnPayCash" onclick="seleccionarMetodoCobroPOS('efectivo')">
+                                💵 Efectivo
+                            </button>
+                            <button type="button" class="pay-btn pay-btn-yape" id="btnPayYape" onclick="seleccionarMetodoCobroPOS('yape')">
+                                📱 Yape
+                            </button>
+                        </div>
+
+                        <!-- Selector de Estado: Pagado vs Debe -->
+                        <div class="payment-selector-title">Estado del Pago:</div>
+                        <div class="status-toggle-grid">
+                            <button type="button" class="status-btn status-btn-paid active" id="btnStatusPaid" onclick="seleccionarEstadoCobroPOS('pagado')">
+                                ✅ Pagado
+                            </button>
+                            <button type="button" class="status-btn status-btn-debt" id="btnStatusDebt" onclick="seleccionarEstadoCobroPOS('debe')">
+                                ⏳ Debe (Fiado)
+                            </button>
+                        </div>
+
+                        <!-- Área de Deudor (visible sólo si se elige 'Debe') -->
+                        <div class="debtor-box" id="posDebtorBox" style="display: none;">
+                            <div class="debtor-box-title">¿Quién queda debiendo?:</div>
+                            <div class="debtor-quick-chips">
+                                <span class="debtor-chip" onclick="seleccionarDeudorRapido('Belén')">Belén</span>
+                                <span class="debtor-chip" onclick="seleccionarDeudorRapido('Anel')">Anel</span>
+                                <span class="debtor-chip" onclick="seleccionarDeudorRapido('Profesor')">Profesor</span>
+                            </div>
+                            <input type="text" id="posDebtorInput" class="debtor-input" placeholder="Escribe el nombre o alias...">
+                        </div>
+
+                        <!-- Botón Maestro de Cobro -->
+                        <button type="button" class="btn-charge" id="btnFinalizarVenta" onclick="procesarVentaPOS()">
+                            <span>✨ Cobrar S/ 0.00</span>
                         </button>
                     </div>
 
-                    <!-- Lista de productos agregados (Carrito) -->
-                    <label>Productos en esta venta:</label>
-                    <div id="carritoContainer" class="cart-list">
-                        <p style="text-align: center; color: var(--gray-400); padding: 1rem; font-size: 0.85rem;">
-                            No has agregado ningún dulce a la venta todavía.
-                        </p>
-                    </div>
-
-                    <!-- Total de la venta -->
-                    <div class="cart-total-banner">
-                        <span>TOTAL A COBRAR:</span>
-                        <strong id="cartTotalText">S/ 0.00</strong>
-                    </div>
-
-                    <!-- Método de pago: Efectivo o Yape -->
-                    <div class="form-group">
-                        <label>Método de Pago:</label>
-                        <div class="radio-group">
-                            <label class="radio-card selected-efectivo" id="labelEfectivo" onclick="seleccionarMetodoPago('efectivo')">
-                                <input type="radio" name="metodoPago" value="efectivo" checked>
-                                💵 Efectivo
-                            </label>
-                            <label class="radio-card" id="labelYape" onclick="seleccionarMetodoPago('yape')">
-                                <input type="radio" name="metodoPago" value="yape">
-                                📱 Yape
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Estado del pago: Pagado o Debe -->
-                    <div class="form-group">
-                        <label>Estado del Pago:</label>
-                        <div class="radio-group">
-                            <label class="radio-card selected-pagado" id="labelPagado" onclick="seleccionarEstadoPago('pagado')">
-                                <input type="radio" name="estadoPago" value="pagado" checked>
-                                ✅ Pagado
-                            </label>
-                            <label class="radio-card" id="labelDebe" onclick="seleccionarEstadoPago('debe')">
-                                <input type="radio" name="estadoPago" value="debe">
-                                ⏳ Debe (Fiado)
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Campo condicional: Nombre de quien debe -->
-                    <div class="form-group" id="deudorFieldGroup" style="display: none;">
-                        <label for="nombreDeudorInput" style="color: #b45309;">⚠️ Nombre del cliente que queda debiendo:</label>
-                        <input type="text" id="nombreDeudorInput" class="form-control" placeholder="Ej. Juan vecino piso 2, Doña María">
-                    </div>
-
-                    <!-- Botón para procesar la venta -->
-                    <button type="button" class="btn btn-primary btn-block" style="padding: 0.9rem;" onclick="procesarVenta()">
-                        ✨ Registrar Venta
-                    </button>
-                </div>
-
-                <!-- Columna Derecha: Ventas recientes del vendedor -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">🕒 Últimas Ventas de Hoy</h2>
-                        <button class="btn btn-secondary btn-sm" onclick="cargarUltimasVentasVendedor()">🔄 Refrescar</button>
-                    </div>
-                    <div class="table-responsive">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Hora</th>
-                                    <th>Total</th>
-                                    <th>Método</th>
-                                    <th>Estado</th>
-                                    <th>Detalles</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tablaUltimasVentasBody">
-                                <tr>
-                                    <td colspan="5" style="text-align: center; color: var(--gray-400);">Cargando ventas...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
                 </div>
 
             </div>
         </section>
 
         <!-- -----------------------------------------------------------------
-             PANTALLA 2: STOCK Y CUADRE DEL DÍA
+             VISTA 2: RESUMEN EJECUTIVO & CUADRE DEL DÍA
              ----------------------------------------------------------------- -->
-        <section id="cuadreTab" class="view-section">
+        <section id="cuadreView" class="view-panel">
             
-            <!-- Barra de filtro de fecha y vendedor -->
-            <div class="card" style="padding: 1rem 1.5rem; margin-bottom: 1.25rem;">
-                <div class="form-row" style="align-items: flex-end; margin-bottom: 0;">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="cuadreFechaInput">Fecha del Cuadre:</label>
-                        <input type="date" id="cuadreFechaInput" class="form-control" onchange="cargarCuadreYStock()">
+            <!-- Barra superior con selector de fecha -->
+            <div class="section-card" style="padding: 0.9rem 1.25rem; margin-bottom: 1.25rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <label for="filtroFechaCuadre" style="font-weight: 700; font-size: 0.9rem; color: var(--text-muted);">Fecha del Cuadre:</label>
+                        <input type="date" id="filtroFechaCuadre" style="padding: 0.45rem 0.75rem; border: 1.5px solid var(--border-color); border-radius: var(--radius-md); font-size: 0.92rem; font-weight: 600;" onchange="recargarCuadreDiario()">
+                        <button class="btn-action btn-action-secondary" onclick="establecerFechaHoyCuadre()">Hoy</button>
                     </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="cuadreVendedorSelect">Filtrar por Vendedor:</label>
-                        <select id="cuadreVendedorSelect" class="form-control" onchange="cargarCuadreYStock()">
-                            <option value="todos">-- Todos los Vendedores --</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <button class="btn btn-secondary" onclick="cargarCuadreYStock()">
-                            🔍 Consultar
-                        </button>
+
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">
+                        Actualizado en tiempo real con las ventas de cada vendedor.
                     </div>
                 </div>
             </div>
 
-            <!-- Tarjetas de métricas del cuadre -->
-            <div class="grid-3" style="margin-bottom: 1.5rem;">
-                <div class="metric-card metric-efectivo">
-                    <div class="metric-icon">💵</div>
-                    <div class="metric-info">
-                        <h3>Efectivo del Día</h3>
-                        <div class="metric-value" id="cuadreEfectivoText">S/ 0.00</div>
+            <!-- KPIs Principales del Día -->
+            <div class="dashboard-kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-icon-box kpi-icon-total">💰</div>
+                    <div>
+                        <div class="kpi-data-label">Ventas Cobradas</div>
+                        <div class="kpi-data-val" id="kpiTotalCobradas">S/ 0.00</div>
                     </div>
                 </div>
 
-                <div class="metric-card metric-yape">
-                    <div class="metric-icon">📱</div>
-                    <div class="metric-info">
-                        <h3>Yape del Día</h3>
-                        <div class="metric-value" id="cuadreYapeText">S/ 0.00</div>
+                <div class="kpi-card">
+                    <div class="kpi-icon-box kpi-icon-cash">💵</div>
+                    <div>
+                        <div class="kpi-data-label">Efectivo Total</div>
+                        <div class="kpi-data-val" id="kpiTotalEfectivo">S/ 0.00</div>
                     </div>
                 </div>
 
-                <div class="metric-card metric-debe">
-                    <div class="metric-icon">⏳</div>
-                    <div class="metric-info">
-                        <h3>Deudas / Por Cobrar</h3>
-                        <div class="metric-value" id="cuadreDeudaText">S/ 0.00</div>
+                <div class="kpi-card">
+                    <div class="kpi-icon-box kpi-icon-yape">📱</div>
+                    <div>
+                        <div class="kpi-data-label">Yape Total</div>
+                        <div class="kpi-data-val" id="kpiTotalYape">S/ 0.00</div>
+                    </div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-icon-box kpi-icon-debt">⏳</div>
+                    <div>
+                        <div class="kpi-data-label">Por Cobrar (Deudas)</div>
+                        <div class="kpi-data-val" id="kpiTotalDeudas">S/ 0.00</div>
                     </div>
                 </div>
             </div>
 
-            <div class="grid-2">
-                <!-- Tabla: Stock de cada vendedor -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">📦 Stock Actual por Vendedor</h2>
-                        <small style="color: var(--gray-600);">Entregado - Vendido</small>
-                    </div>
-                    <div class="table-responsive">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Vendedor</th>
-                                    <th>Dulce</th>
-                                    <th>Entregado</th>
-                                    <th>Vendido</th>
-                                    <th>Stock Actual</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tablaStockVendedoresBody">
-                                <tr>
-                                    <td colspan="5" style="text-align: center; color: var(--gray-400);">Cargando inventario...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+            <!-- Arqueo de Dinero por Vendedor (Ainhoa vs Rony) -->
+            <div class="reconciliation-card">
+                <div class="section-title">
+                    <span>⚖️ Cuadre de Caja por Vendedor</span>
                 </div>
+                <div class="reconciliation-grid">
+                    
+                    <!-- Tarjeta de Ainhoa -->
+                    <div class="seller-balance-box">
+                        <div class="seller-balance-header">
+                            <span class="seller-balance-name">👩‍💼 Ainhoa</span>
+                            <span class="badge-pill badge-paid" id="badgeEstadoAinhoa">Al día</span>
+                        </div>
+                        <div class="balance-item-row">
+                            <span>Ventas en Efectivo:</span>
+                            <strong id="cuadreEfectivoAinhoa">S/ 0.00</strong>
+                        </div>
+                        <div class="balance-item-row">
+                            <span>Ventas por Yape:</span>
+                            <strong id="cuadreYapeAinhoa">S/ 0.00</strong>
+                        </div>
+                        <div class="balance-item-row">
+                            <span>Fiado / Por Cobrar:</span>
+                            <strong id="cuadreDeudaAinhoa" style="color: var(--debt);">S/ 0.00</strong>
+                        </div>
+                        <div class="balance-total-row">
+                            <span>Total Cobrado Ainhoa:</span>
+                            <span id="cuadreTotalAinhoa">S/ 0.00</span>
+                        </div>
+                    </div>
 
-                <!-- Tabla: Cuentas por cobrar / Deudas pendientes -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">📝 Cuentas por Cobrar (Deudas)</h2>
-                        <span class="badge badge-debe">Pendientes</span>
+                    <!-- Tarjeta de Rony -->
+                    <div class="seller-balance-box">
+                        <div class="seller-balance-header">
+                            <span class="seller-balance-name">👨‍💼 Rony</span>
+                            <span class="badge-pill badge-paid" id="badgeEstadoRony">Al día</span>
+                        </div>
+                        <div class="balance-item-row">
+                            <span>Ventas en Efectivo:</span>
+                            <strong id="cuadreEfectivoRony">S/ 0.00</strong>
+                        </div>
+                        <div class="balance-item-row">
+                            <span>Ventas por Yape:</span>
+                            <strong id="cuadreYapeRony">S/ 0.00</strong>
+                        </div>
+                        <div class="balance-item-row">
+                            <span>Fiado / Por Cobrar:</span>
+                            <strong id="cuadreDeudaRony" style="color: var(--debt);">S/ 0.00</strong>
+                        </div>
+                        <div class="balance-total-row">
+                            <span>Total Cobrado Rony:</span>
+                            <span id="cuadreTotalRony">S/ 0.00</span>
+                        </div>
                     </div>
-                    <div class="table-responsive">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Vendedor</th>
-                                    <th>Cliente que debe</th>
-                                    <th>Monto</th>
-                                    <th>Acción</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tablaDeudoresBody">
-                                <tr>
-                                    <td colspan="4" style="text-align: center; color: var(--gray-400);">No hay deudas pendientes registradas.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+
                 </div>
             </div>
 
-            <!-- Tabla completa de ventas del día -->
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="card-title">📑 Detalle de Todas las Ventas del Día</h2>
+            <!-- Tabla de Deudas Pendientes (Cuentas por Cobrar) -->
+            <div class="section-card">
+                <div class="section-card-header">
+                    <div class="section-title">
+                        <span>📝 Deudas Pendientes por Cobrar</span>
+                    </div>
                 </div>
-                <div class="table-responsive">
-                    <table>
+                <div style="overflow-x: auto;">
+                    <table class="table-clean">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Cliente que debe</th>
+                                <th>Vendido por</th>
+                                <th>Monto</th>
+                                <th>Acción Rápida</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaDeudasBody">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--text-dim); padding: 1.5rem;">
+                                    Cargando deudas...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Historial Detallado de Ventas del Día CON EDICIÓN Y ANULACIÓN -->
+            <div class="section-card">
+                <div class="section-card-header">
+                    <div class="section-title">
+                        <span>📋 Detalle de Ventas Registradas en la Fecha</span>
+                    </div>
+                    <small style="color: var(--text-muted);">Puedes editar o anular cualquier venta si hubo un error al registrarla.</small>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="table-clean">
                         <thead>
                             <tr>
                                 <th>Hora</th>
@@ -320,13 +347,15 @@
                                 <th>Productos</th>
                                 <th>Método</th>
                                 <th>Estado</th>
-                                <th>Cliente Deudor</th>
                                 <th>Total</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="tablaVentasDetalladasBody">
                             <tr>
-                                <td colspan="7" style="text-align: center; color: var(--gray-400);">Selecciona una fecha para ver el detalle.</td>
+                                <td colspan="7" style="text-align: center; color: var(--text-dim); padding: 1.5rem;">
+                                    Cargando ventas...
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -336,59 +365,236 @@
         </section>
 
         <!-- -----------------------------------------------------------------
-             PANTALLA 3: ENTREGAR MERCADERÍA A UN VENDEDOR
+             VISTA 3: NUEVO - ESTADÍSTICAS, GRÁFICOS & PROYECCIONES
              ----------------------------------------------------------------- -->
-        <section id="entregasTab" class="view-section">
-            <div class="grid-2">
-                <!-- Formulario para entregar mercadería -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">🚚 Entregar Mercadería a Vendedor</h2>
-                    </div>
+        <section id="estadisticasView" class="view-panel">
+            
+            <!-- Barra de Filtro de Período -->
+            <div class="stats-period-bar">
+                <div style="font-weight: 800; font-size: 1.05rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>📊 Análisis Estadístico & Predictivo del Negocio</span>
+                </div>
+                <div class="stats-period-pills">
+                    <button class="period-pill-btn active" onclick="cambiarPeriodoEstadisticas('semana', this)">Esta Semana</button>
+                    <button class="period-pill-btn" onclick="cambiarPeriodoEstadisticas('ultimos7', this)">Últimos 7 Días</button>
+                    <button class="period-pill-btn" onclick="cambiarPeriodoEstadisticas('ultimos14', this)">Últimos 14 Días</button>
+                    <button class="period-pill-btn" onclick="cambiarPeriodoEstadisticas('mes', this)">Este Mes</button>
+                </div>
+            </div>
 
-                    <form id="formEntrega" onsubmit="registrarEntrega(event)">
-                        <div class="form-group">
-                            <label for="entregaVendedorSelect">Vendedor que recibe:</label>
-                            <select id="entregaVendedorSelect" class="form-control" required>
-                                <option value="">-- Selecciona al vendedor --</option>
+            <!-- KPIs Predictivos -->
+            <div class="dashboard-kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-icon-box kpi-icon-total">📈</div>
+                    <div>
+                        <div class="kpi-data-label">Venta Diaria Promedio</div>
+                        <div class="kpi-data-val" id="statVentaPromedioDiaria">S/ 0.00</div>
+                    </div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-icon-box kpi-icon-cash">🏆</div>
+                    <div>
+                        <div class="kpi-data-label">Día Pico de Venta</div>
+                        <div class="kpi-data-val" id="statDiaPicoVenta" style="font-size: 1.3rem;">-</div>
+                    </div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-icon-box kpi-icon-yape">🔮</div>
+                    <div>
+                        <div class="kpi-data-label">Proyección Cierre Semana</div>
+                        <div class="kpi-data-val" id="statProyeccionSemana">S/ 0.00</div>
+                    </div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-icon-box kpi-icon-debt">⚠️</div>
+                    <div>
+                        <div class="kpi-data-label">Dulces en Riesgo de Quiebre</div>
+                        <div class="kpi-data-val" id="statDulcesEnRiesgo" style="color: var(--danger);">0 ítems</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grilla de Gráficos Estadísticos -->
+            <div class="stats-grid-2">
+                <!-- Gráfico 1: Tendencia de Ventas (Efectivo vs Yape) -->
+                <div class="chart-card">
+                    <div class="chart-card-header">
+                        <span class="chart-card-title">📅 Evolución de Ventas por Día (Efectivo vs Yape)</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="chartVentasTendencia"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico 2: Top Productos Más Vendidos -->
+                <div class="chart-card">
+                    <div class="chart-card-header">
+                        <span class="chart-card-title">⭐ Top Golosinas Más Vendidas (Ingresos en S/.)</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="chartTopProductos"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-grid-2">
+                <!-- Gráfico 3: Comparativa entre Vendedores (Ainhoa vs Rony) -->
+                <div class="chart-card">
+                    <div class="chart-card-header">
+                        <span class="chart-card-title">👥 Rendimiento por Vendedor (Ainhoa vs Rony)</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="chartComparativaVendedores"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico 4: Participación de Métodos de Pago (%) -->
+                <div class="chart-card">
+                    <div class="chart-card-header">
+                        <span class="chart-card-title">💳 Proporción Efectivo vs Yape</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="chartParticipacionMetodos"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Módulo de Análisis Probabilístico de Agotamiento de Stock (Runway) -->
+            <div class="prob-card">
+                <span class="prob-header-tag">🔮 Modelo Probabilístico de Consumo & Runway de Inventario</span>
+                <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 0.35rem;">
+                    Proyección de Días Restantes y Riesgo de Desabastecimiento
+                </h3>
+                <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+                    Calculado cruzando el stock disponible actual con la velocidad de venta diaria ($v = \text{unidades / día}$). Te alerta qué productos se van a agotar en los próximos 3 a 7 días para programar compras a tiempo en Dollarcity.
+                </p>
+
+                <div style="overflow-x: auto;">
+                    <table class="table-clean">
+                        <thead>
+                            <tr>
+                                <th>Dulce / Golosina</th>
+                                <th>Stock Total</th>
+                                <th>Velocidad (Venta / Día)</th>
+                                <th>Días de Stock Restantes</th>
+                                <th>Probabilidad de Quiebre</th>
+                                <th>Acción Recomendada</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaProbabilidadAgotamientoBody">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--text-dim); padding: 1.5rem;">
+                                    Calculando probabilidades de inventario...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- -----------------------------------------------------------------
+             VISTA 4: CONTROL DE STOCK (ALMACÉN VS AINHOA VS RONY)
+             ----------------------------------------------------------------- -->
+        <section id="stockView" class="view-panel">
+            <div class="section-card">
+                <div class="section-card-header">
+                    <div class="section-title">
+                        <span>📦 Inventario y Stock en Poder de Cada Vendedor</span>
+                    </div>
+                    <small style="color: var(--text-muted);">
+                        Stock = Entregas recibidas &minus; Ventas realizadas
+                    </small>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="table-clean">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Precio Venta</th>
+                                <th>Almacén Central</th>
+                                <th>Stock Ainhoa</th>
+                                <th>Stock Rony</th>
+                                <th>Stock Total Negocio</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaStockCompletoBody">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--text-dim); padding: 1.5rem;">
+                                    Calculando inventario...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- -----------------------------------------------------------------
+             VISTA 5: ENTREGAR MERCADERÍA A UN VENDEDOR
+             ----------------------------------------------------------------- -->
+        <section id="entregasView" class="view-panel">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+                
+                <!-- Formulario para entregar mercadería -->
+                <div class="section-card">
+                    <div class="section-title" style="margin-bottom: 1rem;">
+                        <span>🚚 Nueva Entrega de Stock</span>
+                    </div>
+                    <form onsubmit="guardarEntregaMercaderia(event)">
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+                                Vendedor que recibe:
+                            </label>
+                            <select id="entregaVendedorSelect" style="width: 100%; padding: 0.65rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); font-size: 0.95rem; font-weight: 600;" required>
+                                <!-- Opciones cargadas con JS -->
                             </select>
                         </div>
 
-                        <div class="form-group">
-                            <label for="entregaProductoSelect">Producto a entregar:</label>
-                            <select id="entregaProductoSelect" class="form-control" required onchange="actualizarInfoAlmacenEntrega()">
-                                <option value="">-- Selecciona el dulce --</option>
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+                                Producto a entregar:
+                            </label>
+                            <select id="entregaProductoSelect" style="width: 100%; padding: 0.65rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); font-size: 0.95rem;" required onchange="actualizarInfoStockAlmacenEntrega()">
+                                <option value="">-- Elige un dulce --</option>
                             </select>
-                            <small id="entregaAlmacenStockInfo" style="color: var(--gray-600); font-size: 0.8rem; margin-top: 4px; display: block;">
-                                Stock en almacén: -
+                            <small id="entregaStockAlmacenAviso" style="display: block; margin-top: 0.3rem; color: var(--text-muted); font-size: 0.8rem;">
+                                Stock en almacén central: -
                             </small>
                         </div>
 
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="entregaCantidadInput">Cantidad de unidades:</label>
-                                <input type="number" id="entregaCantidadInput" class="form-control" min="1" placeholder="Ej. 20" required>
+                        <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem;">
+                            <div style="flex: 1;">
+                                <label style="display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+                                    Cantidad (unidades):
+                                </label>
+                                <input type="number" id="entregaCantidadInput" min="1" placeholder="Ej. 20" style="width: 100%; padding: 0.65rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); font-size: 0.95rem;" required>
                             </div>
-                            <div class="form-group">
-                                <label for="entregaFechaInput">Fecha y hora:</label>
-                                <input type="datetime-local" id="entregaFechaInput" class="form-control" required>
+                            <div style="flex: 1;">
+                                <label style="display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+                                    Fecha:
+                                </label>
+                                <input type="datetime-local" id="entregaFechaInput" style="width: 100%; padding: 0.65rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); font-size: 0.85rem;" required>
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-primary btn-block" style="padding: 0.8rem;">
-                            📦 Confirmar Entrega
+                        <button type="submit" class="btn-charge" style="padding: 0.75rem;">
+                            📦 Confirmar Entrega al Vendedor
                         </button>
                     </form>
                 </div>
 
-                <!-- Historial de entregas realizadas -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">📋 Últimas Entregas Realizadas</h2>
-                        <button class="btn btn-secondary btn-sm" onclick="cargarHistorialEntregas()">🔄 Refrescar</button>
+                <!-- Historial de entregas recientes -->
+                <div class="section-card">
+                    <div class="section-title" style="margin-bottom: 1rem;">
+                        <span>📋 Últimas Entregas Realizadas</span>
                     </div>
-                    <div class="table-responsive">
-                        <table>
+                    <div style="overflow-x: auto;">
+                        <table class="table-clean">
                             <thead>
                                 <tr>
                                     <th>Fecha</th>
@@ -399,179 +605,208 @@
                             </thead>
                             <tbody id="tablaHistorialEntregasBody">
                                 <tr>
-                                    <td colspan="4" style="text-align: center; color: var(--gray-400);">Cargando entregas...</td>
+                                    <td colspan="4" style="text-align: center; color: var(--text-dim); padding: 1rem;">
+                                        Cargando historial...
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
+
             </div>
         </section>
 
         <!-- -----------------------------------------------------------------
-             PANTALLA 4: REGISTRAR COMPRA (ABASTECIMIENTO GENERAL)
+             VISTA 6: COMPRAS & GASTOS CON EDICIÓN Y ELIMINACIÓN
              ----------------------------------------------------------------- -->
-        <section id="comprasTab" class="view-section">
-            <div class="grid-2">
-                <!-- Formulario de compra mayorista -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">📥 Registrar Compra a Proveedor</h2>
+        <section id="comprasView" class="view-panel">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+                
+                <!-- Registrar Compra de Insumos -->
+                <div class="section-card">
+                    <div class="section-title" style="margin-bottom: 1rem;">
+                        <span>📥 Registrar Compra / Factura</span>
                     </div>
-
-                    <form id="formCompra" onsubmit="registrarCompra(event)">
-                        <div class="form-group">
-                            <label for="compraProductoSelect">Producto o Dulce Comprado:</label>
-                            <select id="compraProductoSelect" class="form-control" required>
+                    <form onsubmit="guardarCompraInsumo(event)">
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+                                Dulce o Insumo Comprado:
+                            </label>
+                            <select id="compraProductoSelect" style="width: 100%; padding: 0.65rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); font-size: 0.95rem;" required>
                                 <option value="">-- Selecciona el producto --</option>
                             </select>
                         </div>
 
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="compraCantidadInput">Cantidad comprada (unids):</label>
-                                <input type="number" id="compraCantidadInput" class="form-control" min="1" placeholder="Ej. 100" required>
+                        <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem;">
+                            <div style="flex: 1;">
+                                <label style="display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+                                    Cantidad Comprada:
+                                </label>
+                                <input type="number" id="compraCantidadInput" min="1" placeholder="Ej. 50" style="width: 100%; padding: 0.65rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); font-size: 0.95rem;" required>
                             </div>
-                            <div class="form-group">
-                                <label for="compraCostoInput">Costo total pagado (S/.):</label>
-                                <input type="number" id="compraCostoInput" class="form-control" step="0.01" min="0" placeholder="Ej. 80.00" required>
+                            <div style="flex: 1;">
+                                <label style="display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+                                    Costo Total Pagado (S/.):
+                                </label>
+                                <input type="number" id="compraCostoInput" step="0.01" min="0" placeholder="Ej. 10.00" style="width: 100%; padding: 0.65rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); font-size: 0.95rem;" required>
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="compraFechaInput">Fecha y hora de compra:</label>
-                            <input type="datetime-local" id="compraFechaInput" class="form-control" required>
+                        <div style="margin-bottom: 1.25rem;">
+                            <label style="display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+                                Fecha de Compra / Boleta:
+                            </label>
+                            <input type="datetime-local" id="compraFechaInput" style="width: 100%; padding: 0.65rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); font-size: 0.85rem;" required>
                         </div>
 
-                        <button type="submit" class="btn btn-accent btn-block" style="padding: 0.8rem;">
-                            💰 Guardar Compra
+                        <button type="submit" class="btn-charge" style="background-color: var(--text-main); padding: 0.75rem;">
+                            💰 Guardar Compra en Almacén
                         </button>
                     </form>
                 </div>
 
-                <!-- Historial de compras registradas -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">📦 Historial de Compras Recientes</h2>
-                        <button class="btn btn-secondary btn-sm" onclick="cargarHistorialCompras()">🔄 Refrescar</button>
+                <!-- Historial de Compras CON EDICIÓN Y ELIMINACIÓN -->
+                <div class="section-card">
+                    <div class="section-title" style="margin-bottom: 1rem;">
+                        <span>🧾 Compras Registradas</span>
                     </div>
-                    <div class="table-responsive">
-                        <table>
+                    <div style="overflow-x: auto;">
+                        <table class="table-clean">
                             <thead>
                                 <tr>
                                     <th>Fecha</th>
                                     <th>Producto</th>
                                     <th>Cantidad</th>
-                                    <th>Costo Total</th>
+                                    <th>Costo Invertido</th>
+                                    <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="tablaHistorialComprasBody">
                                 <tr>
-                                    <td colspan="4" style="text-align: center; color: var(--gray-400);">Cargando compras...</td>
+                                    <td colspan="5" style="text-align: center; color: var(--text-dim); padding: 1rem;">
+                                        Cargando compras...
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
+
             </div>
         </section>
 
         <!-- -----------------------------------------------------------------
-             PANTALLA 5: CATÁLOGO DE PRODUCTOS (DULCES)
+             VISTA 7: CATÁLOGO DE PRODUCTOS (DULCES Y PRECIOS)
              ----------------------------------------------------------------- -->
-        <section id="productosTab" class="view-section">
-            <div class="grid-2">
-                <!-- Formulario de nuevo producto -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">✨ Agregar Nuevo Dulce al Catálogo</h2>
+        <section id="productosView" class="view-panel">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+                
+                <!-- Registrar Nuevo Dulce -->
+                <div class="section-card">
+                    <div class="section-title" style="margin-bottom: 1rem;">
+                        <span>✨ Agregar Nuevo Dulce</span>
                     </div>
-
-                    <form id="formNuevoProducto" onsubmit="guardarNuevoProducto(event)">
-                        <div class="form-group">
-                            <label for="productoNombreInput">Nombre del Dulce / Golosina:</label>
-                            <input type="text" id="productoNombreInput" class="form-control" placeholder="Ej. Chocolates Sublime 30g" required>
+                    <form onsubmit="guardarNuevoProductoCatalogo(event)">
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+                                Nombre del Dulce o Golosina:
+                            </label>
+                            <input type="text" id="catalogoNombreInput" placeholder="Ej. Gomitas Trululu Aros 300g" style="width: 100%; padding: 0.65rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); font-size: 0.95rem;" required>
                         </div>
 
-                        <div class="form-group">
-                            <label for="productoPrecioInput">Precio de Venta al Público (S/.):</label>
-                            <input type="number" id="productoPrecioInput" class="form-control" step="0.10" min="0" placeholder="Ej. 2.50" required>
+                        <div style="margin-bottom: 1.25rem;">
+                            <label style="display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+                                Precio Unitario de Venta (S/.):
+                            </label>
+                            <input type="number" id="catalogoPrecioInput" step="0.05" min="0" placeholder="Ej. 0.25" style="width: 100%; padding: 0.65rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); font-size: 0.95rem;" required>
                         </div>
 
-                        <button type="submit" class="btn btn-primary btn-block">
-                            ➕ Registrar Producto
+                        <button type="submit" class="btn-charge" style="padding: 0.75rem;">
+                            ➕ Agregar al Catálogo
                         </button>
                     </form>
                 </div>
 
-                <!-- Catálogo actual -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">🏷️ Catálogo de Dulces</h2>
-                        <button class="btn btn-secondary btn-sm" onclick="cargarProductos()">🔄 Refrescar</button>
+                <!-- Lista de Productos -->
+                <div class="section-card">
+                    <div class="section-title" style="margin-bottom: 1rem;">
+                        <span>🏷️ Catálogo de Golosinas Activo</span>
                     </div>
-                    <div class="table-responsive">
-                        <table>
+                    <div style="overflow-x: auto; max-height: 480px; overflow-y: auto;">
+                        <table class="table-clean">
                             <thead>
                                 <tr>
                                     <th>ID</th>
-                                    <th>Nombre</th>
+                                    <th>Nombre del Dulce</th>
                                     <th>Precio de Venta</th>
                                 </tr>
                             </thead>
                             <tbody id="tablaProductosCatalogoBody">
                                 <tr>
-                                    <td colspan="3" style="text-align: center; color: var(--gray-400);">Cargando productos...</td>
+                                    <td colspan="3" style="text-align: center; color: var(--text-dim); padding: 1rem;">
+                                        Cargando productos...
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
+
             </div>
         </section>
 
     </main>
 
     <!-- =====================================================================
-         MODAL: AUTENTICACIÓN / LOGIN DE VENDEDORES
+         MODAL: EDITAR COMPRA REGISTRADA
          ===================================================================== -->
-    <div id="modalAuth" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>🔐 Iniciar Sesión de Vendedor</h3>
-                <button class="modal-close" onclick="cerrarModalAuth()">&times;</button>
+    <div id="modalEditarCompra" class="modal-backdrop">
+        <div class="modal-sheet">
+            <div class="modal-top">
+                <h3 style="font-size: 1.1rem; font-weight: 800;">✏️ Editar Compra</h3>
+                <button class="modal-close-icon" onclick="cerrarModalEditarCompra()">&times;</button>
             </div>
             
-            <p style="font-size: 0.88rem; color: var(--gray-600); margin-bottom: 1.25rem;">
-                Selecciona tu perfil de vendedor o ingresa con tu correo y contraseña de Supabase Auth:
-            </p>
+            <form onsubmit="guardarEdicionCompra(event)">
+                <input type="hidden" id="editCompraId">
 
-            <!-- Acceso Rápido para los dos vendedores -->
-            <div style="background: var(--gray-100); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem;">
-                <label style="margin-bottom: 0.5rem; display: block;">⚡ Acceso directo:</label>
-                <div style="display: flex; gap: 0.5rem; flex-direction: column;" id="botonesAccesoRapidoVendedores">
-                    <!-- Los botones de Carlos y Andrea se generan dinámicamente con JS -->
-                </div>
-            </div>
-
-            <!-- Login con contraseña (Supabase Auth) -->
-            <form id="formLogin" onsubmit="iniciarSesionConAuth(event)">
-                <div class="form-group">
-                    <label for="authEmailInput">Correo electrónico:</label>
-                    <input type="email" id="authEmailInput" class="form-control" placeholder="vendedor@dulces.com" required>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+                        Producto Comprado:
+                    </label>
+                    <select id="editCompraProductoSelect" style="width: 100%; padding: 0.65rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); font-size: 0.95rem;" required>
+                    </select>
                 </div>
 
-                <div class="form-group">
-                    <label for="authPasswordInput">Contraseña:</label>
-                    <input type="password" id="authPasswordInput" class="form-control" placeholder="••••••••" required>
+                <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem;">
+                    <div style="flex: 1;">
+                        <label style="display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+                            Cantidad:
+                        </label>
+                        <input type="number" id="editCompraCantidadInput" min="1" style="width: 100%; padding: 0.65rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); font-size: 0.95rem;" required>
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+                            Costo Total (S/.):
+                        </label>
+                        <input type="number" id="editCompraCostoInput" step="0.01" min="0" style="width: 100%; padding: 0.65rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); font-size: 0.95rem;" required>
+                    </div>
                 </div>
 
-                <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                    <button type="submit" class="btn btn-primary btn-block">
-                        Entrar con Correo
+                <div style="margin-bottom: 1.25rem;">
+                    <label style="display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+                        Fecha de la Compra:
+                    </label>
+                    <input type="datetime-local" id="editCompraFechaInput" style="width: 100%; padding: 0.65rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); font-size: 0.85rem;" required>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="submit" class="btn-charge" style="flex: 1; padding: 0.75rem;">
+                        💾 Guardar Cambios
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="registrarUsuarioEnAuth()">
-                        Registrar
+                    <button type="button" class="btn-action btn-action-secondary" onclick="cerrarModalEditarCompra()">
+                        Cancelar
                     </button>
                 </div>
             </form>
@@ -579,36 +814,151 @@
     </div>
 
     <!-- =====================================================================
-         MODAL: CONFIGURACIÓN DE CREDENCIALES DE SUPABASE
+         MODAL: EDITAR VENTA REGISTRADA
          ===================================================================== -->
-    <div id="modalConfig" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>⚙️ Conexión con Supabase</h3>
-                <button class="modal-close" onclick="cerrarModalConfig()">&times;</button>
+    <div id="modalEditarVenta" class="modal-backdrop">
+        <div class="modal-sheet modal-sheet-lg">
+            <div class="modal-top">
+                <h3 style="font-size: 1.15rem; font-weight: 800;">✏️ Modificar Venta Registrada</h3>
+                <button class="modal-close-icon" onclick="cerrarModalEditarVenta()">&times;</button>
+            </div>
+
+            <form onsubmit="guardarEdicionVenta(event)">
+                <input type="hidden" id="editVentaId">
+
+                <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 140px;">
+                        <label style="display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+                            Vendedor:
+                        </label>
+                        <select id="editVentaVendedorSelect" style="width: 100%; padding: 0.6rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); font-weight: 700;" required>
+                        </select>
+                    </div>
+
+                    <div style="flex: 1; min-width: 140px;">
+                        <label style="display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+                            Método de Pago:
+                        </label>
+                        <select id="editVentaMetodoSelect" style="width: 100%; padding: 0.6rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); font-weight: 700;" required>
+                            <option value="efectivo">💵 Efectivo</option>
+                            <option value="yape">📱 Yape</option>
+                        </select>
+                    </div>
+
+                    <div style="flex: 1; min-width: 140px;">
+                        <label style="display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+                            Estado:
+                        </label>
+                        <select id="editVentaEstadoSelect" style="width: 100%; padding: 0.6rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); font-weight: 700;" onchange="toggleDeudorEdicionVenta()" required>
+                            <option value="pagado">✅ Pagado</option>
+                            <option value="debe">⏳ Debe (Fiado)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="editVentaDeudorGroup" style="display: none; margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 700; font-size: 0.85rem; color: var(--debt); margin-bottom: 0.35rem;">
+                        Nombre de quien debe:
+                    </label>
+                    <input type="text" id="editVentaDeudorInput" style="width: 100%; padding: 0.6rem; border-radius: var(--radius-md); border: 1.5px solid #fcd34d;">
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem;">
+                        Fecha y Hora:
+                    </label>
+                    <input type="datetime-local" id="editVentaFechaInput" style="width: 100%; padding: 0.6rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); font-size: 0.88rem;" required>
+                </div>
+
+                <!-- Detalle de Productos en la Venta -->
+                <div style="margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span style="font-size: 0.9rem; font-weight: 800; color: var(--text-main);">Golosinas en esta Venta:</span>
+                        <button type="button" class="btn-action btn-action-secondary btn-action-sm" onclick="agregarFilaEdicionVenta()">
+                            ➕ Agregar dulce
+                        </button>
+                    </div>
+
+                    <div id="editVentaItemsContainer" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 220px; overflow-y: auto; background: var(--bg-subtle); padding: 0.75rem; border-radius: var(--radius-md);">
+                        <!-- Filas de productos cargadas dinámicamente -->
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #fafbfc; padding: 0.85rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 1.25rem;">
+                    <span style="font-weight: 700; color: var(--text-muted);">Total recalculado:</span>
+                    <strong style="font-size: 1.4rem; color: var(--primary);" id="editVentaTotalText">S/ 0.00</strong>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="submit" class="btn-charge" style="flex: 1; padding: 0.75rem;">
+                        💾 Guardar Corrección
+                    </button>
+                    <button type="button" class="btn-action btn-action-secondary" onclick="cerrarModalEditarVenta()">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         MODAL: LIQUIDAR / COBRAR DEUDA
+         ===================================================================== -->
+    <div id="modalCobroDeuda" class="modal-backdrop">
+        <div class="modal-sheet">
+            <div class="modal-top">
+                <h3 style="font-size: 1.1rem; font-weight: 800;">💵 Cobrar Deuda Pendiente</h3>
+                <button class="modal-close-icon" onclick="cerrarModalCobroDeuda()">&times;</button>
             </div>
             
-            <p style="font-size: 0.88rem; color: var(--gray-600); margin-bottom: 1rem;">
-                Copia estos datos desde tu proyecto de Supabase en 
-                <strong>Project Settings &rarr; API</strong>:
+            <p id="modalDeudaTextoInfo" style="font-size: 0.95rem; margin-bottom: 1.25rem; color: var(--text-muted);"></p>
+
+            <div class="payment-selector-title">¿Cómo canceló el cliente?:</div>
+            <div class="payment-toggle-grid" style="margin-bottom: 1.25rem;">
+                <button type="button" class="pay-btn pay-btn-cash active" id="modalBtnPayCash" onclick="seleccionarMetodoCobroModal('efectivo')">
+                    💵 En Efectivo
+                </button>
+                <button type="button" class="pay-btn pay-btn-yape" id="modalBtnPayYape" onclick="seleccionarMetodoCobroModal('yape')">
+                    📱 Por Yape
+                </button>
+            </div>
+
+            <button type="button" class="btn-charge" onclick="confirmarCobroDeudaModal()">
+                ✅ Marcar como Pagado & Registrar en Cuadre
+            </button>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         MODAL: CONFIGURACIÓN SUPABASE
+         ===================================================================== -->
+    <div id="modalSupabaseConfig" class="modal-backdrop">
+        <div class="modal-sheet">
+            <div class="modal-top">
+                <h3 style="font-size: 1.1rem; font-weight: 800;">⚙️ Conexión con Supabase</h3>
+                <button class="modal-close-icon" onclick="cerrarModalConfig()">&times;</button>
+            </div>
+
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                Encuentra estos datos en tu panel de Supabase en <strong>Project Settings &rarr; API</strong>:
             </p>
 
-            <form onsubmit="guardarConfiguracionSupabaseForm(event)">
-                <div class="form-group">
-                    <label for="configUrlInput">Project URL:</label>
-                    <input type="url" id="configUrlInput" class="form-control" placeholder="https://xyzcompany.supabase.co" required>
+            <form onsubmit="guardarCredencialesForm(event)">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">Project URL:</label>
+                    <input type="url" id="inputSupabaseUrl" style="width: 100%; padding: 0.65rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); font-size: 0.9rem;" placeholder="https://xyzcompany.supabase.co" required>
                 </div>
 
-                <div class="form-group">
-                    <label for="configKeyInput">Anon Public Key:</label>
-                    <input type="text" id="configKeyInput" class="form-control" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required>
+                <div style="margin-bottom: 1.25rem;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">Anon Public Key:</label>
+                    <input type="text" id="inputSupabaseKey" style="width: 100%; padding: 0.65rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color); font-size: 0.9rem;" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required>
                 </div>
 
-                <div style="display: flex; gap: 0.5rem; margin-top: 1.25rem;">
-                    <button type="submit" class="btn btn-primary btn-block">
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="submit" class="btn-charge" style="flex: 1; padding: 0.75rem;">
                         💾 Guardar Conexión
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="reiniciarCredencialesSupabase()">
+                    <button type="button" class="btn-action btn-action-secondary" onclick="reiniciarCredencialesSupabase()">
                         Limpiar
                     </button>
                 </div>
@@ -616,43 +966,10 @@
         </div>
     </div>
 
-    <!-- =====================================================================
-         MODAL: REGISTRAR COBRO DE DEUDA
-         ===================================================================== -->
-    <div id="modalCobrarDeuda" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>💵 Cobrar Deuda Pendiente</h3>
-                <button class="modal-close" onclick="cerrarModalCobrarDeuda()">&times;</button>
-            </div>
-            <p id="cobrarDeudaInfo" style="margin-bottom: 1rem; font-size: 0.95rem;"></p>
-            
-            <div class="form-group">
-                <label>¿Cómo canceló el cliente?:</label>
-                <div class="radio-group">
-                    <label class="radio-card selected-efectivo" id="cobrarLabelEfectivo" onclick="seleccionarMetodoCobro('efectivo')">
-                        <input type="radio" name="metodoCobro" value="efectivo" checked>
-                        💵 Efectivo
-                    </label>
-                    <label class="radio-card" id="cobrarLabelYape" onclick="seleccionarMetodoCobro('yape')">
-                        <input type="radio" name="metodoCobro" value="yape">
-                        📱 Yape
-                    </label>
-                </div>
-            </div>
-
-            <button type="button" class="btn btn-success btn-block" style="margin-top: 1rem;" onclick="confirmarCobroDeuda()">
-                ✅ Marcar como Pagado
-            </button>
-        </div>
-    </div>
-
-    <!-- =====================================================================
-         NOTIFICACIÓN TOAST FLOTANTE
-         ===================================================================== -->
-    <div id="toastNotification" class="toast">
-        <span id="toastIcon">✅</span>
-        <span id="toastMessage">Operación realizada con éxito</span>
+    <!-- Notificación Toast Flotante -->
+    <div id="appToast" class="floating-toast">
+        <span id="appToastIcon">✅</span>
+        <span id="appToastText">Operación exitosa</span>
     </div>
 
     <!-- Scripts de la aplicación -->
